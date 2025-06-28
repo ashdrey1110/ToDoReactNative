@@ -1,28 +1,46 @@
-import { StyleSheet } from "react-native";
-
+import { StyleSheet, ScrollView, SafeAreaView } from "react-native";
+import Colors from "@/constants/Colors";
 import EditScreenInfo from "@/components/EditScreenInfo";
 import { Text, View } from "@/components/Themed";
 
 export default function TabOneScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your To-Do List</Text>
-      <View
-        style={styles.separator}
-        lightColor="rgba(0, 195, 16, 0.79)"
-        darkColor="rgba(0, 195, 16, 0.79)"
-      />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
-    </View>
+    // Use SafeAreaView to avoid content overlapping with notches/status bar
+    // Then wrap your content in a ScrollView
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.scrollViewContent} 
+        contentContainerStyle={styles.scrollViewContainer} 
+      >
+        <Text style={styles.title}>Your To-Do List</Text>
+        <View
+          style={styles.separator}
+          lightColor="rgba(0, 195, 16, 0.79)"
+          darkColor="rgba(0, 195, 16, 0.79)"
+        />
+        <EditScreenInfo path="app/(tabs)/index.tsx" />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  safeArea: {
+    flex: 1, // Make SafeAreaView take full available height
+    backgroundColor: Colors.light.background, 
+  },
+  scrollViewContent: {
+    flex: 1, // Allow ScrollView to take available space
+  },
+  scrollViewContainer: {
+    // This style is applied to the content INSIDE the ScrollView,
+    // allowing you to set padding, alignment, etc., for the whole scrollable content.
     paddingHorizontal: 20,
+    paddingTop: 20,
+    // If your content is shorter than the screen, and you want it aligned to top:
     justifyContent: "flex-start",
-    paddingTop: 30,
+    // If you want content to fill space even if short:
+    // flexGrow: 1,
   },
   title: {
     fontSize: 20,

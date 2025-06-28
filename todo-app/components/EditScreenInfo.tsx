@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 //have to define the interface for item so that u can use it below
 interface Item {
+  id: string;
   name: string;
   comments: string;
   completed: boolean;
@@ -42,33 +43,61 @@ export default function EditScreenInfo({ path }: { path: string }) {
     setNewItemName(textInput);
   };
 
-  const handleCompleteToggle = () => {
+  const handleCompleteToggle = (id: string, completeStatus: boolean) => {
     fetch(`http://localhost:8080/list/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ completed: completeUpdate }),
-    }).then((res) => {
-      if (!res.ok) {
-        throw new Error("Failed to mark item as complete");
-      }
-      return res.json();
-    });
+      body: JSON.stringify({ completed: !completeStatus }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to change item's completion status");
+        }
+        return res.json();
+      })
+      .then(() => {
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === id ? { ...item, completed: !completeStatus } : item
+          )
+        );
+      });
   };
 
   const handleAddItem = () => {
-    fetch("http://localhost:8080/list", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: newItemName,
-        comments: "",
-        completed: false,
-      }),
-    });
+    if (newItemName != "" && newItemName != "Add new item") {
+      fetch("http://localhost:8080/list", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newItemName,
+          comments: "",
+          completed: false,
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Failed to add new item");
+          }
+          return res.json();
+        })
+        .then(() => {
+          return fetch(`http://localhost:8080/list`);
+        })
+        .then((res) => res.json())
+        .then((data: Item[]) => {
+          setItems(data);
+        })
+        .then(() => {
+          setNewItemName("Add new item");
+        });
+    } else {
+      return;
+    }
   };
 
   return (
@@ -82,12 +111,14 @@ export default function EditScreenInfo({ path }: { path: string }) {
                   name="radio-button-on"
                   size={24}
                   color={Colors.light.tint}
+                  onPress={() => handleCompleteToggle(item.id, item.completed)}
                 />
               ) : (
                 <MaterialIcons
                   name="radio-button-off"
                   size={24}
                   color={Colors.light.tint}
+                  onPress={() => handleCompleteToggle(item.id, item.completed)}
                 />
               )}
               <Text
@@ -103,7 +134,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
               lightColor="rgba(0,0,0,0.8)"
               darkColor="rgba(255,255,255,0.8)"
             >
-              {item.comments}
+              {item.comments || "Add details"}
             </Text>
             <View
               style={styles.separator}
@@ -127,6 +158,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
             onChangeText={handleNewInput}
             onFocus={handleFocus}
             value={newItemName}
+            onBlur={handleAddItem}
           />
         </View>
       </View>

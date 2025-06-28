@@ -4,6 +4,7 @@ const PORT = 8080;
 const knex = require("knex")(require("../knexfile.js")["development"]);
 const path = require("path");
 const cors = require("cors");
+const { orderBy } = require("lodash");
 
 app.use(cors());
 app.use(express.json());
@@ -15,6 +16,7 @@ app.get("/", (request, response) => {
 app.get("/list", (req, res) => {
   knex("list_table")
     .select("*")
+    .orderBy("id")
     .then((list) => res.status(200).json(list))
     .catch((err) =>
       res.status(500).json({
