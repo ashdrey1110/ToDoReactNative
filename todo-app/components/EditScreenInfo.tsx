@@ -2,13 +2,10 @@ import React from "react";
 import { StyleSheet, TextInput } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { ExternalLink } from "./ExternalLink";
-import { MonoText } from "./StyledText";
-import { Text, View } from "./Themed";
+import { View } from "./Themed";
 import { useEffect, useState } from "react";
 
 import Colors from "@/constants/Colors";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 //have to define the interface for item so that u can use it below
 interface Item {
@@ -21,8 +18,11 @@ interface Item {
 export default function EditScreenInfo({ path }: { path: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [newItemName, setNewItemName] = useState("Add new item");
-  const [updatedComment, setUpdatedComment] = useState("");
-  const [completeUpdate, setCompleteUpdate] = useState(false);
+  const [updatedComment, setUpdatedComment] = useState({
+    id: "",
+    comments: "",
+  });
+  const [updatedItem, setUpdatedItem] = useState({ id: "", name: "" });
 
   useEffect(() => {
     fetch(`http://localhost:8080/list`)
@@ -33,6 +33,120 @@ export default function EditScreenInfo({ path }: { path: string }) {
       .catch((e) => console.error("Failed to fetch items", e));
   }, []);
 
+  // Functions below for editing a current item name
+
+  const handleEditItem = (id: string, textInput: string) => {
+    setUpdatedItem({
+      id: id,
+      name: textInput,
+    });
+  };
+
+  const getItemName = (id: string) => {
+    if (updatedItem.id == id) {
+      return updatedItem.name;
+    } else {
+      let currItem = items.find((item) => item.id == id);
+      return currItem?.name;
+    }
+  };
+
+  const handleUpdateItem = (id: string) => {
+    if (updatedItem.name.length > 0) {
+      fetch(`http://localhost:8080/list/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: updatedItem.name }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Failed to update item name");
+          }
+          return res.json();
+        })
+        .then(() => {
+          setItems((prevItems) =>
+            prevItems.map((item) =>
+              item.id === id ? { ...item, name: updatedItem.name } : item
+            )
+          );
+          setUpdatedItem({ id: "", name: "" });
+        });
+    } else {
+      fetch(`http://localhost:8080/list/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Failed to delete item");
+          }
+          return res.json();
+        })
+        .then(() => {
+          setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+          setUpdatedItem({ id: "", name: "" });
+        });
+    }
+  };
+
+  // Functions below for updating comments
+
+  const handleCommentFocus = (id: string, comment: string) => {
+    if (comment == "") {
+      setUpdatedComment({ id: id, comments: "" });
+    }
+  };
+
+  const handleEditComments = (id: string, textInput: string) => {
+    setUpdatedComment({
+      id: id,
+      comments: textInput,
+    });
+  };
+
+  const getItemComments = (id: string) => {
+    if (updatedComment.id == id) {
+      return updatedComment.comments;
+    } else {
+      let currItem = items.find((item) => item.id == id);
+      return currItem?.comments || "Add details";
+    }
+  };
+
+  const handleUpdateComments = (id: string) => {
+    if (updatedComment.comments.length > 0) {
+      fetch(`http://localhost:8080/list/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ comments: updatedComment.comments }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Failed to update item comments");
+          }
+          return res.json();
+        })
+        .then(() => {
+          setItems((prevItems) =>
+            prevItems.map((item) =>
+              item.id === id
+                ? { ...item, comments: updatedComment.comments }
+                : item
+            )
+          );
+          setUpdatedComment({ id: "", comments: "" });
+        });
+    }
+  };
+
+  // Functions below for adding a new item
   const handleFocus = () => {
     if (newItemName === "Add new item") {
       setNewItemName("");
@@ -110,32 +224,33 @@ export default function EditScreenInfo({ path }: { path: string }) {
                 <MaterialIcons
                   name="radio-button-on"
                   size={24}
-                  color={Colors.light.tint}
+                  color={"rgba(16, 65, 0, 0.8)"}
                   onPress={() => handleCompleteToggle(item.id, item.completed)}
                 />
               ) : (
                 <MaterialIcons
                   name="radio-button-off"
                   size={24}
-                  color={Colors.light.tint}
+                  color={"rgba(16, 65, 0, 0.8)"}
                   onPress={() => handleCompleteToggle(item.id, item.completed)}
                 />
               )}
-              <Text
-                style={styles.getStartedText}
-                lightColor="rgba(16, 65, 0, 0.8)"
-                darkColor="rgba(255,255,255,0.8)"
-              >
-                {item.name}
-              </Text>
+              <TextInput
+                style={styles.itemName}
+                onChangeText={(textInput) => handleEditItem(item.id, textInput)}
+                value={getItemName(item.id)}
+                onBlur={() => handleUpdateItem(item.id)}
+              />
             </View>
-            <Text
-              style={styles.helpLinkText}
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)"
-            >
-              {item.comments || "Add details"}
-            </Text>
+            <TextInput
+              style={styles.itemComments}
+              onFocus={() => handleCommentFocus(item.id, item.comments)}
+              onChangeText={(textInput) =>
+                handleEditComments(item.id, textInput)
+              }
+              value={getItemComments(item.id)}
+              onBlur={() => handleUpdateComments(item.id)}
+            />
             <View
               style={styles.separator}
               lightColor="rgb(162, 213, 127)"
@@ -162,11 +277,6 @@ export default function EditScreenInfo({ path }: { path: string }) {
           />
         </View>
       </View>
-      <View
-        style={styles.separator}
-        lightColor="rgb(162, 213, 127)"
-        darkColor="rgba(135, 220, 142, 0.79)"
-      />
     </View>
   );
 }
@@ -180,13 +290,20 @@ const styles = StyleSheet.create({
   separator: {
     marginTop: 10,
     marginBottom: 10,
+    marginLeft: 35,
     height: 1,
-    width: "100%",
+    width: "90%",
   },
   input: {
     fontSize: 17,
-    marginHorizontal: 5,
+    marginHorizontal: 15,
     color: "rgb(42, 174, 22)",
+  },
+  itemName: {
+    fontSize: 17,
+    marginHorizontal: 10,
+    marginRight: 30,
+    color: "rgba(16, 65, 0, 0.8)",
   },
   getStartedContainer: {
     marginHorizontal: 10,
@@ -202,6 +319,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     marginHorizontal: 5,
+    color: "rgba(16, 65, 0, 0.8)",
   },
   helpContainer: {
     marginTop: 15,
@@ -210,9 +328,9 @@ const styles = StyleSheet.create({
   helpLink: {
     paddingVertical: 15,
   },
-  helpLinkText: {
+  itemComments: {
     justifyContent: "center",
-    marginLeft: 30,
+    marginLeft: 35,
     color: "rgb(136, 186, 115)",
   },
 });

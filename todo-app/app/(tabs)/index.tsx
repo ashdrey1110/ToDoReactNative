@@ -12,12 +12,8 @@ export default function TabOneScreen() {
         style={styles.scrollViewContent} 
         contentContainerStyle={styles.scrollViewContainer} 
       >
-        <Text style={styles.title}>Your To-Do List</Text>
-        <View
-          style={styles.separator}
-          lightColor="rgba(0, 195, 16, 0.79)"
-          darkColor="rgba(0, 195, 16, 0.79)"
-        />
+        <Text style={styles.title}>Your List</Text>
+        
         <EditScreenInfo path="app/(tabs)/index.tsx" />
       </ScrollView>
     </SafeAreaView>
@@ -43,8 +39,9 @@ const styles = StyleSheet.create({
     // flexGrow: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 15,
   },
   separator: {
     marginVertical: 10,
